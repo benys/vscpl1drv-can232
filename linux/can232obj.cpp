@@ -230,7 +230,7 @@ bool CCAN232Obj::open(const char *pDevice, unsigned long flags)
         }
         printf("]\n");
         m_can232obj.m_comm.comm_puts(szCmd, strlen(szCmd), true);
-        SLEEP(100);
+        SLEEP(50);
         //*szResponse = 0;
         //for (int i=0; i<sizeof(szResponse); i++) szResponse[i]=0;
         cnt = m_can232obj.m_comm.comm_gets(szResponse, sizeof(szResponse), 10000);
@@ -240,7 +240,7 @@ bool CCAN232Obj::open(const char *pDevice, unsigned long flags)
             printf(" %02X", szResponse[i]);
         }
         printf("]\n");
-        SLEEP(100);
+        SLEEP(50);
         if (try_count++ > 10) {
             syslog(LOG_ERR, "can232obj: Unable to Close CAN bus before Open!\n");
             m_can232obj.m_bRun = false;
@@ -252,17 +252,17 @@ bool CCAN232Obj::open(const char *pDevice, unsigned long flags)
     printf("CAN bus closed\n");
     //----------------------------------------------------------------------
 
-    SLEEP(100);
+    SLEEP(50);
     m_can232obj.m_comm.drainInput();
 
     sprintf(szCmd, "\r");
     m_can232obj.m_comm.comm_puts(szCmd, strlen(szCmd), true);
-    SLEEP(100);
+    SLEEP(50);
     m_can232obj.m_comm.drainInput();
 
     sprintf(szCmd, "\r");
     m_can232obj.m_comm.comm_puts(szCmd, strlen(szCmd), true);
-    SLEEP(100);
+    SLEEP(50);
     m_can232obj.m_comm.drainInput();
 
     //----------------------------------------------------------------------
@@ -282,7 +282,7 @@ bool CCAN232Obj::open(const char *pDevice, unsigned long flags)
         //*szResponse = 0;
         //for (int i=0; i<sizeof(szResponse); i++) szResponse[i]=0;
         cnt = m_can232obj.m_comm.comm_gets(szResponse, sizeof(szResponse), 10000);
-        printf("V Read  [");
+        printf("V Read %d [", cnt);
         for (int i = 0; i < cnt; i++) {
             printf("%02X ", szResponse[i]);
         }
@@ -292,7 +292,7 @@ bool CCAN232Obj::open(const char *pDevice, unsigned long flags)
             m_can232obj.m_version = atoi(szResponse + 1);
             GETVersion = TRUE;
         }
-        SLEEP(100);
+        SLEEP(50);
         if (++try_count > 10) {
             syslog(LOG_ERR, "can232obj: Unable to get can232 dongle version!\n");
             m_can232obj.m_bRun = false;
@@ -644,7 +644,10 @@ void *workThread(void *pObject)
         LOCK_MUTEX(pcan232obj->m_can232ObjMutex);
 
         // Noting to do if we should end...
-        if (!pcan232obj->m_can232obj.m_bRun) continue;
+        if (!pcan232obj->m_can232obj.m_bRun) {
+            UNLOCK_MUTEX(pcan232obj->m_can232ObjMutex);
+            continue;
+        }
 
         int cnt;
         unsigned char c;
@@ -772,17 +775,17 @@ void *workThread(void *pObject)
             printf("]\n");
             printf("workThread T - Read  [");
             
-            do{
-                c = pcan232obj->m_can232obj.m_comm.readChar(&cnt);
-                if (c == 0x0D) {
-                    printf("[CR]");
-                } else {
-                    printf("%c", c);
-                }
-            } while(c != 0x0D);
-            printf("]\n\n");
+            //do{
+            //    c = pcan232obj->m_can232obj.m_comm.readChar(&cnt);
+            //    if (c == 0x0D) {
+            //        printf("[CR]");
+            //    } else {
+            //        printf("%c", c);
+            //    }
+            //} while(c != 0x0D);
+            //printf("]\n\n");
             // needed !! At least at 19200 baud
-            SLEEP(100);
+            SLEEP(10);
 
             // Update statistics
             pcan232obj->m_can232obj.m_stat.cntTransmitData += msg.sizeData;
@@ -803,7 +806,7 @@ void *workThread(void *pObject)
 
         UNLOCK_MUTEX(pcan232obj->m_can232ObjMutex);
 
-        if (!bActivity) SLEEP(100);
+        if (!bActivity) SLEEP(50);
         bActivity = false;
 
     } // while( pcan232obj->m_can232obj.m_bRun )
